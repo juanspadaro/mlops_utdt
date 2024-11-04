@@ -65,3 +65,14 @@ El objetivo de este trabajo práctico es aplicar los conceptos y herramientas vi
 
 ## Estructura del Proyecto
 
+```plaintext
+├── src/                   # Código fuente del proyecto
+│   ├── data_pipeline/     # Pipelines de procesamiento de datos
+│   ├── model/             # Definición y entrenamiento del modelo
+│   ├── deployment/        # Scripts para el despliegue en producción
+│   └── utils/             # Funciones auxiliares y herramientas
+├── notebooks/             # Notebooks para el análisis y experimentación
+├── config/                # Archivos de configuración
+├── docker/                # Archivos y configuración de Docker
+├── airflow/               # Workflows de Apache Airflow
+└── README.md              # Documentación del proyecto
