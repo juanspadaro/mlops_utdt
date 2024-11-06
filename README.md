@@ -5,6 +5,10 @@
 **Profesores:** Federico Pousa, Agustín Mosteiro  
 **Horario:** Miércoles, 19:15 - 22:15
 
+
+**Alumnos:** Juan Spadaro, Tomás Gonzalez Danna, Rocío Palacín y Jaime Sempértegui 
+
+
 ---
 
 ## Tabla de Contenidos
