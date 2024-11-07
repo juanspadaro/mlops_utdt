@@ -80,3 +80,46 @@ El objetivo de este trabajo práctico es aplicar los conceptos y herramientas vi
 ├── docker/                # Archivos y configuración de Docker
 ├── airflow/               # Workflows de Apache Airflow
 └── README.md              # Documentación del proyecto
+```
+
+## Instalación y Configuración
+
+### Crear Ambiente Virtual
+
+Para configurar el entorno virtual llamado `mlops_utdt`, sigue estos pasos:
+
+1. **Asegúrate de tener `python3-venv` instalado**:
+   
+   Si estás en Linux y no tienes instalado el módulo `venv`, instálalo con:
+   ```bash
+   sudo apt-get install python3-venv
+
+3. **Crea el ambiente virtual**:
+
+   Ejecuta el siguiente comando:
+   ```bash
+   python3 -m venv mlops_utdt
+
+4. **Activa el ambiente virtual**:
+
+   En Linux/macOS:
+   ```bash
+   source mlops_utdt/bin/activate
+   ```
+   En Windows:
+   ```bash
+   .\mlops_utdt\Scripts\activate
+   ```
+
+5. **Instala las dependencias necesarias (opcional)**:
+
+   Si tienes un archivo `requirements.txt`, puedes instalar las dependencias con:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+Este ambiente virtual permitirá gestionar las dependencias de Python necesarias para el proyecto de manera aislada.
+
+ 
+
+
