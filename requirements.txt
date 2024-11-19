@@ -1,6 +1,0 @@
-apache-airflow==2.8.4
-apache-airflow-providers-postgres==5.13.1
-numpy==2.0.2
-pandas==2.2.3
-psycopg2-binary==2.9.10
-boto3==1.35.63
