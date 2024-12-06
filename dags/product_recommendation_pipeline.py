@@ -177,22 +177,40 @@ with DAG(
 
         top_ctr = pd.read_csv(StringIO(top_ctr_csv))
         top_products = pd.read_csv(StringIO(top_products_csv))
-
+        
         # Conectar a PostgreSQL
         hook = PostgresHook(postgres_conn_id=CONNECTION_ID)
         conn = hook.get_conn()
         cursor = conn.cursor()
 
+        # Verificar y crear las tablas si no existen
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS top_ctr (
+            advertiser_id INT NOT NULL,
+            product_id INT NOT NULL,
+            ctr FLOAT NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id)
+        );
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS top_products (
+            advertiser_id INT NOT NULL,
+            product_id INT NOT NULL,
+            views INT NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id)
+        );
+        """)
+
         # Escribir en las tablas
         for _, row in top_ctr.iterrows():
             cursor.execute(
-                "INSERT INTO top_ctr (advertiser_id, product_id, ctr) VALUES (%s, %s, %s)",
+                "INSERT INTO top_ctr (advertiser_id, product_id, ctr) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
                 (row['advertiser_id'], row['product_id'], row['ctr']),
             )
 
         for _, row in top_products.iterrows():
             cursor.execute(
-                "INSERT INTO top_products (advertiser_id, product_id, views) VALUES (%s, %s, %s)",
+                "INSERT INTO top_products (advertiser_id, product_id, views) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
                 (row['advertiser_id'], row['product_id'], row['views']),
             )
 
