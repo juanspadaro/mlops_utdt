@@ -186,16 +186,16 @@ with DAG(
         # Verificar y crear las tablas si no existen
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS top_ctr (
-            advertiser_id INT NOT NULL,
-            product_id INT NOT NULL,
+            advertiser_id VARCHAR NOT NULL,
+            product_id VARCHAR NOT NULL,
             ctr FLOAT NOT NULL,
             PRIMARY KEY (advertiser_id, product_id)
         );
         """)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS top_products (
-            advertiser_id INT NOT NULL,
-            product_id INT NOT NULL,
+            advertiser_id VARCHAR NOT NULL,
+            product_id VARCHAR NOT NULL,
             views INT NOT NULL,
             PRIMARY KEY (advertiser_id, product_id)
         );
