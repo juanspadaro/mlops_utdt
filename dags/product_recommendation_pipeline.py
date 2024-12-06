@@ -1,6 +1,7 @@
 import datetime
 import logging
 import pandas as pd
+from io import StringIO
 from airflow.models.dag import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -53,9 +54,9 @@ with DAG(
         ads_views_data = s3_hook.read_key(key=f"{RAW_DATA_PREFIX}ads_views.csv", bucket_name=S3_BUCKET)
         
         # Leer los archivos como DataFrames
-        active_clients = pd.read_csv(pd.compat.StringIO(active_clients_data))
-        product_views = pd.read_csv(pd.compat.StringIO(product_views_data))
-        ads_views = pd.read_csv(pd.compat.StringIO(ads_views_data))
+        active_clients = pd.read_csv(StringIO(active_clients_data))
+        product_views = pd.read_csv(StringIO(product_views_data))
+        ads_views = pd.read_csv(StringIO(ads_views_data))
         
         # Filtrar datos por advertisers activos
         active_clients_list = active_clients['advertiser_id'].tolist()
@@ -99,7 +100,7 @@ with DAG(
         filtered_ads_views_data = s3_hook.read_key(
             key=f"{PROCESSED_DATA_PREFIX}filtered_ads_views.csv", bucket_name=S3_BUCKET
         )
-        ads_views_df = pd.read_csv(pd.compat.StringIO(filtered_ads_views_data))
+        ads_views_df = pd.read_csv(StringIO(filtered_ads_views_data))
         
         # Calcular CTR
         clicks = ads_views_df[ads_views_df['type'] == 'click'].groupby(['advertiser_id', 'product_id']).size().reset_index(name='clicks')
@@ -136,7 +137,7 @@ with DAG(
         filtered_product_views_data = s3_hook.read_key(
             key=f"{PROCESSED_DATA_PREFIX}filtered_product_views.csv", bucket_name=S3_BUCKET
         )
-        product_views_df = pd.read_csv(pd.compat.StringIO(filtered_product_views_data))
+        product_views_df = pd.read_csv(StringIO(filtered_product_views_data))
 
         # Calcular productos más vistos
         top_products = (
@@ -174,8 +175,8 @@ with DAG(
         top_ctr_csv = s3_hook.read_key(key=f"{PROCESSED_DATA_PREFIX}top_ctr.csv", bucket_name=S3_BUCKET)
         top_products_csv = s3_hook.read_key(key=f"{PROCESSED_DATA_PREFIX}top_products.csv", bucket_name=S3_BUCKET)
 
-        top_ctr = pd.read_csv(pd.compat.StringIO(top_ctr_csv))
-        top_products = pd.read_csv(pd.compat.StringIO(top_products_csv))
+        top_ctr = pd.read_csv(StringIO(top_ctr_csv))
+        top_products = pd.read_csv(StringIO(top_products_csv))
 
         # Conectar a PostgreSQL
         hook = PostgresHook(postgres_conn_id=CONNECTION_ID)
