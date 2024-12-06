@@ -204,13 +204,23 @@ with DAG(
         # Escribir en las tablas
         for _, row in top_ctr.iterrows():
             cursor.execute(
-                "INSERT INTO top_ctr (advertiser_id, product_id, ctr) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
+                """
+                INSERT INTO top_ctr (advertiser_id, product_id, ctr) 
+                VALUES (%s, %s, %s) 
+                ON CONFLICT (advertiser_id, product_id) 
+                DO UPDATE SET ctr = EXCLUDED.ctr
+                """,
                 (row['advertiser_id'], row['product_id'], row['ctr']),
             )
 
         for _, row in top_products.iterrows():
             cursor.execute(
-                "INSERT INTO top_products (advertiser_id, product_id, views) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
+                """
+                INSERT INTO top_products (advertiser_id, product_id, views) 
+                VALUES (%s, %s, %s) 
+                ON CONFLICT (advertiser_id, product_id) 
+                DO UPDATE SET views = EXCLUDED.views
+                """,
                 (row['advertiser_id'], row['product_id'], row['views']),
             )
 
