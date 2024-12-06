@@ -186,16 +186,16 @@ with DAG(
         # Verificar y crear las tablas si no existen
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS top_ctr (
-            advertiser_id INT NOT NULL,
-            product_id INT NOT NULL,
+            advertiser_id VARCHAR NOT NULL,
+            product_id VARCHAR NOT NULL,
             ctr FLOAT NOT NULL,
             PRIMARY KEY (advertiser_id, product_id)
         );
         """)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS top_products (
-            advertiser_id INT NOT NULL,
-            product_id INT NOT NULL,
+            advertiser_id VARCHAR NOT NULL,
+            product_id VARCHAR NOT NULL,
             views INT NOT NULL,
             PRIMARY KEY (advertiser_id, product_id)
         );
@@ -204,13 +204,23 @@ with DAG(
         # Escribir en las tablas
         for _, row in top_ctr.iterrows():
             cursor.execute(
-                "INSERT INTO top_ctr (advertiser_id, product_id, ctr) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
+                """
+                INSERT INTO top_ctr (advertiser_id, product_id, ctr) 
+                VALUES (%s, %s, %s) 
+                ON CONFLICT (advertiser_id, product_id) 
+                DO UPDATE SET ctr = EXCLUDED.ctr
+                """,
                 (row['advertiser_id'], row['product_id'], row['ctr']),
             )
 
         for _, row in top_products.iterrows():
             cursor.execute(
-                "INSERT INTO top_products (advertiser_id, product_id, views) VALUES (%s, %s, %s) ON CONFLICT (advertiser_id, product_id) DO NOTHING",
+                """
+                INSERT INTO top_products (advertiser_id, product_id, views) 
+                VALUES (%s, %s, %s) 
+                ON CONFLICT (advertiser_id, product_id) 
+                DO UPDATE SET views = EXCLUDED.views
+                """,
                 (row['advertiser_id'], row['product_id'], row['views']),
             )
 
