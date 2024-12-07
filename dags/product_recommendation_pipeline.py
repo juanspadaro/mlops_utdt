@@ -1,6 +1,7 @@
 import datetime
 import logging
 import pandas as pd
+import datetime
 from io import StringIO
 from airflow.models.dag import DAG
 from airflow.operators.python import PythonOperator
@@ -107,6 +108,11 @@ with DAG(
         impressions = ads_views_df[ads_views_df['type'] == 'impression'].groupby(['advertiser_id', 'product_id']).size().reset_index(name='impressions')
         ctr_data = pd.merge(clicks, impressions, on=['advertiser_id', 'product_id'], how='left')
         ctr_data['ctr'] = ctr_data['clicks'] / ctr_data['impressions']
+
+        # Agregar la columna de fecha
+        ctr_data['fecha'] = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        # Seleccionar los top 20 productos por CTR
         top_ctr = ctr_data.sort_values(['advertiser_id', 'ctr'], ascending=[True, False]).groupby('advertiser_id').head(20)
 
         # Guardar resultado en S3
@@ -149,6 +155,9 @@ with DAG(
             .head(20)
         )
 
+        # Agregar la columna de fecha
+        top_products['fecha'] = datetime.datetime.now().strftime('%Y-%m-%d')
+
         # Guardar resultado en S3
         top_products_csv = top_products.to_csv(index=False)
         s3_hook.load_string(
@@ -185,19 +194,21 @@ with DAG(
 
         # Verificar y crear las tablas si no existen
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS top_ctr (
+        CREATE TABLE IF NOT EXISTS top_ctr_model (
             advertiser_id VARCHAR NOT NULL,
             product_id VARCHAR NOT NULL,
             ctr FLOAT NOT NULL,
-            PRIMARY KEY (advertiser_id, product_id)
+            fecha DATE NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id, fecha)
         );
         """)
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS top_products (
+        CREATE TABLE IF NOT EXISTS top_products_model (
             advertiser_id VARCHAR NOT NULL,
             product_id VARCHAR NOT NULL,
             views INT NOT NULL,
-            PRIMARY KEY (advertiser_id, product_id)
+            fecha DATE NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id, fecha)
         );
         """)
 
@@ -205,23 +216,23 @@ with DAG(
         for _, row in top_ctr.iterrows():
             cursor.execute(
                 """
-                INSERT INTO top_ctr (advertiser_id, product_id, ctr) 
-                VALUES (%s, %s, %s) 
-                ON CONFLICT (advertiser_id, product_id) 
+                INSERT INTO top_ctr_model (advertiser_id, product_id, ctr, fecha) 
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (advertiser_id, product_id, fecha) 
                 DO UPDATE SET ctr = EXCLUDED.ctr
                 """,
-                (row['advertiser_id'], row['product_id'], row['ctr']),
+                (row['advertiser_id'], row['product_id'], row['ctr'], row['fecha']),
             )
 
         for _, row in top_products.iterrows():
             cursor.execute(
                 """
-                INSERT INTO top_products (advertiser_id, product_id, views) 
-                VALUES (%s, %s, %s) 
-                ON CONFLICT (advertiser_id, product_id) 
+                INSERT INTO top_products_model (advertiser_id, product_id, views, fecha) 
+                VALUES (%s, %s, %s, %s) 
+                ON CONFLICT (advertiser_id, product_id, fecha) 
                 DO UPDATE SET views = EXCLUDED.views
                 """,
-                (row['advertiser_id'], row['product_id'], row['views']),
+                (row['advertiser_id'], row['product_id'], row['views'], row['fecha']),
             )
 
         conn.commit()
