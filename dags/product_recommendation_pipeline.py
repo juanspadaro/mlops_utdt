@@ -101,7 +101,12 @@ with DAG(
         filtered_ads_views_data = s3_hook.read_key(
             key=f"{PROCESSED_DATA_PREFIX}filtered_ads_views.csv", bucket_name=S3_BUCKET
         )
-        ads_views_df = pd.read_csv(StringIO(filtered_ads_views_data))
+        ads_views_df = pd.read_csv(StringIO(filtered_ads_views_data), sep=",")
+        ads_views_df.columns = ads_views_df.columns.str.strip()  # Eliminar espacios en los encabezados
+
+        logging.info(f"Columnas disponibles en ads_views_df: {ads_views_df.columns}")
+
+        ads_views_df['date'] = pd.to_datetime(ads_views_df['date'], errors='coerce')
         
         # Calcular CTR
         clicks = ads_views_df[ads_views_df['type'] == 'click'].groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='clicks')
@@ -110,7 +115,7 @@ with DAG(
         ctr_data['ctr'] = ctr_data['clicks'] / ctr_data['impressions']
 
         # Seleccionar los top 20 productos por CTR
-        top_ctr = ctr_data.sort_values(['advertiser_id', 'ctr', 'date'], ascending=[True, True, False]).groupby('advertiser_id', 'date').head(20)
+        top_ctr = ctr_data.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False]).groupby(['advertiser_id', 'date']).head(20)
 
         # Guardar resultado en S3
         top_ctr_csv = top_ctr.to_csv(index=False)
