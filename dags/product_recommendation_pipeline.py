@@ -101,19 +101,21 @@ with DAG(
         filtered_ads_views_data = s3_hook.read_key(
             key=f"{PROCESSED_DATA_PREFIX}filtered_ads_views.csv", bucket_name=S3_BUCKET
         )
-        ads_views_df = pd.read_csv(StringIO(filtered_ads_views_data))
+        ads_views_df = pd.read_csv(StringIO(filtered_ads_views_data), sep=",")
+        ads_views_df.columns = ads_views_df.columns.str.strip()  # Eliminar espacios en los encabezados
+
+        logging.info(f"Columnas disponibles en ads_views_df: {ads_views_df.columns}")
+
+        ads_views_df['date'] = pd.to_datetime(ads_views_df['date'], errors='coerce')
         
         # Calcular CTR
-        clicks = ads_views_df[ads_views_df['type'] == 'click'].groupby(['advertiser_id', 'product_id']).size().reset_index(name='clicks')
-        impressions = ads_views_df[ads_views_df['type'] == 'impression'].groupby(['advertiser_id', 'product_id']).size().reset_index(name='impressions')
-        ctr_data = pd.merge(clicks, impressions, on=['advertiser_id', 'product_id'], how='left')
+        clicks = ads_views_df[ads_views_df['type'] == 'click'].groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='clicks')
+        impressions = ads_views_df[ads_views_df['type'] == 'impression'].groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='impressions')
+        ctr_data = pd.merge(clicks, impressions, on=['advertiser_id', 'product_id', 'date'], how='left')
         ctr_data['ctr'] = ctr_data['clicks'] / ctr_data['impressions']
 
-        # Agregar la columna de fecha
-        ctr_data['fecha'] = datetime.datetime.now().strftime('%Y-%m-%d')
-
         # Seleccionar los top 20 productos por CTR
-        top_ctr = ctr_data.sort_values(['advertiser_id', 'ctr'], ascending=[True, False]).groupby('advertiser_id').head(20)
+        top_ctr = ctr_data.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False]).groupby(['advertiser_id', 'date']).head(20)
 
         # Guardar resultado en S3
         top_ctr_csv = top_ctr.to_csv(index=False)
@@ -147,11 +149,11 @@ with DAG(
 
         # Calcular productos más vistos
         top_products = (
-            product_views_df.groupby(['advertiser_id', 'product_id'])
+            product_views_df.groupby(['advertiser_id', 'product_id', 'date'])
             .size()
             .reset_index(name='views')
-            .sort_values(['advertiser_id', 'views'], ascending=[True, False])
-            .groupby('advertiser_id')
+            .sort_values(['advertiser_id', 'date', 'views'], ascending=[True, True, False])
+            .groupby(['advertiser_id', 'date'])
             .head(20)
         )
 
@@ -198,8 +200,8 @@ with DAG(
             advertiser_id VARCHAR NOT NULL,
             product_id VARCHAR NOT NULL,
             ctr FLOAT NOT NULL,
-            fecha DATE NOT NULL,
-            PRIMARY KEY (advertiser_id, product_id, fecha)
+            date DATE NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id, date)
         );
         """)
         cursor.execute("""
@@ -207,8 +209,8 @@ with DAG(
             advertiser_id VARCHAR NOT NULL,
             product_id VARCHAR NOT NULL,
             views INT NOT NULL,
-            fecha DATE NOT NULL,
-            PRIMARY KEY (advertiser_id, product_id, fecha)
+            date DATE NOT NULL,
+            PRIMARY KEY (advertiser_id, product_id, date)
         );
         """)
 
@@ -216,23 +218,23 @@ with DAG(
         for _, row in top_ctr.iterrows():
             cursor.execute(
                 """
-                INSERT INTO top_ctr_model (advertiser_id, product_id, ctr, fecha) 
+                INSERT INTO top_ctr_model (advertiser_id, product_id, ctr, date) 
                 VALUES (%s, %s, %s, %s)
-                ON CONFLICT (advertiser_id, product_id, fecha) 
+                ON CONFLICT (advertiser_id, product_id, date) 
                 DO UPDATE SET ctr = EXCLUDED.ctr
                 """,
-                (row['advertiser_id'], row['product_id'], row['ctr'], row['fecha']),
+                (row['advertiser_id'], row['product_id'], row['ctr'], row['date']),
             )
 
         for _, row in top_products.iterrows():
             cursor.execute(
                 """
-                INSERT INTO top_products_model (advertiser_id, product_id, views, fecha) 
+                INSERT INTO top_products_model (advertiser_id, product_id, views, date) 
                 VALUES (%s, %s, %s, %s) 
-                ON CONFLICT (advertiser_id, product_id, fecha) 
+                ON CONFLICT (advertiser_id, product_id, date) 
                 DO UPDATE SET views = EXCLUDED.views
                 """,
-                (row['advertiser_id'], row['product_id'], row['views'], row['fecha']),
+                (row['advertiser_id'], row['product_id'], row['views'], row['date']),
             )
 
         conn.commit()
