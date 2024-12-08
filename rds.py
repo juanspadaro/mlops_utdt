@@ -3,8 +3,8 @@ import psycopg2
 engine = psycopg2.connect(
     database="postgres",
     user="postgres",
-    password="grupo4mlops",
-    host="grupo-4-rds.cf4i6e6cwv74.us-east-1.rds.amazonaws.com",
+    password="rdsgrupo4",
+    host="grupo-4-rds2.cf4i6e6cwv74.us-east-1.rds.amazonaws.com",
     port='5432'
 )
 cursor = engine.cursor()
