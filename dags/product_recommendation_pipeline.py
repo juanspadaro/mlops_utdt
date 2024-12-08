@@ -113,6 +113,8 @@ with DAG(
         impressions = ads_views_df[ads_views_df['type'] == 'impression'].groupby(['advertiser_id', 'product_id', 'date']).size().reset_index(name='impressions')
         ctr_data = pd.merge(clicks, impressions, on=['advertiser_id', 'product_id', 'date'], how='left')
         ctr_data['ctr'] = ctr_data['clicks'] / ctr_data['impressions']
+        ctr_data['ctr'] = ctr_data['ctr'].fillna(0)  # Reemplazar NaN con 0
+        ctr_data['ctr'] = ctr_data['ctr'].replace([float('inf'), -float('inf')], 0)  # Reemplazar infinito con 0
 
         # Seleccionar los top 20 productos por CTR
         top_ctr = ctr_data.sort_values(['advertiser_id', 'date', 'ctr'], ascending=[True, True, False]).groupby(['advertiser_id', 'date']).head(20)
@@ -157,8 +159,7 @@ with DAG(
             .head(20)
         )
 
-        # Agregar la columna de fecha
-        top_products['fecha'] = datetime.datetime.now().strftime('%Y-%m-%d')
+        top_products['views'] = top_products['views'].fillna(0)  # Asegurarte de que 'views' no tenga NaN
 
         # Guardar resultado en S3
         top_products_csv = top_products.to_csv(index=False)
@@ -213,6 +214,9 @@ with DAG(
             PRIMARY KEY (advertiser_id, product_id, date)
         );
         """)
+
+        top_ctr = top_ctr.fillna({'ctr': 0})
+        top_products = top_products.fillna({'views': 0})
 
         # Escribir en las tablas
         for _, row in top_ctr.iterrows():
