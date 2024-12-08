@@ -4,12 +4,13 @@ import psycopg2
 
 app = FastAPI()
 
+
 # Conexión a la base de datos
 DB_CONFIG = {
     "dbname": "postgres",
     "user": "postgres",
     "password": "rdsgrupo4",
-    "host": "grupo-4-rds.cf4i6e6cwv74.us-east-1.rds.amazonaws.com",
+    "host": "grupo-4-rds2.cf4i6e6cwv74.us-east-1.rds.amazonaws.com",
     "port": 5432
 }
 
@@ -34,7 +35,7 @@ def db_query(query, params=None):
 # Endpoint: /recommendations/<ADV>/<Modelo>
 @app.get("/recommendations/{adv}/{model}")
 def recommendations(
-    adv: int = Path(..., title="Advertiser ID", description="ID del advertiser"),
+    adv: str = Path(..., title="Advertiser ID", description="ID del advertiser"),
     model: str = Path(..., title="Model", description="Modelo de recomendación (e.g., TopCTR, TopProduct)")
 ):
     """
@@ -43,13 +44,21 @@ def recommendations(
     if model not in ["TopCTR", "TopProduct"]:
         raise HTTPException(status_code=400, detail="Modelo no válido. Por favor usa TopCTR o TopProduct")
 
-    # TODO Chequear la query
-    query = """
-        SELECT product_id
-        FROM recommendations
-        WHERE adv = %s AND model = %s AND date = CURRENT_DATE
-    """
-    recommendations = db_query(query, (adv, model))
+    if model=="TopProduct":
+        query_top_product = """
+            SELECT product_id
+            FROM top_products_model
+            WHERE advertiser_id = %s AND date = CURRENT_DATE
+        """
+        recommendations = db_query(query_top_product,(adv,))
+
+    if model=="TopCTR":
+        query_top_ctr = """
+            SELECT product_id
+            FROM top_ctr_model
+            WHERE advertiser_id = %s AND date = CURRENT_DATE
+        """
+        recommendations = db_query(query_top_ctr,(adv,))
 
     if not recommendations:
         raise HTTPException(status_code=404, detail="No se encontraron recomendaciones para este advertiser.")
@@ -59,81 +68,90 @@ def recommendations(
 @app.get("/stats/")
 def stats():
     """
-    Esto sería el endpoint para devolver estadísticas de las recomendaciones
+    Endpoint para devolver estadísticas sobre las recomendaciones.
     """
     stats_data = {}
-    # TODO Chequear query tmb
-    query_count = "SELECT COUNT(DISTINCT adv) FROM recommendations WHERE date = CURRENT_DATE"
-    stats_data["advertisers_count"] = db_query(query_count)[0][0]
 
-    # Si buscamos los advertisers con mayor variación diaria
+    # Cantidad de advertisers activos
+    query_advertisers_count = """
+        SELECT COUNT(DISTINCT advertiser_id)
+        FROM (
+            SELECT advertiser_id FROM top_ctr_model
+            UNION
+            SELECT advertiser_id FROM top_products_model
+        ) AS active_advertisers
+    """
+    stats_data["advertisers_count"] = db_query(query_advertisers_count)[0][0]
+
+    # Advertisers con mayor variación diaria en recomendaciones
     query_variation = """
-        SELECT adv, COUNT(DISTINCT product_id)
-        FROM recommendations
-        WHERE date BETWEEN CURRENT_DATE - INTERVAL '1 day' AND CURRENT_DATE
-        GROUP BY adv
+        SELECT advertiser_id, COUNT(DISTINCT product_id)
+        FROM (
+            SELECT advertiser_id, product_id, date FROM top_ctr_model
+            UNION ALL
+            SELECT advertiser_id, product_id, date FROM top_products_model
+        ) AS all_recommendations
+        WHERE date = CURRENT_DATE
+        GROUP BY advertiser_id
         ORDER BY COUNT(DISTINCT product_id) DESC
         LIMIT 5
     """
     stats_data["top_advertisers_variation"] = db_query(query_variation)
 
-    # Estadísticas de coincidencia entre modelos
+    # Estadísticas de coincidencia entre TopCTR y TopProduct
     query_overlap = """
-        SELECT adv, COUNT(*)
-        FROM recommendations r1
-        JOIN recommendations r2
-        ON r1.adv = r2.adv AND r1.product_id = r2.product_id AND r1.date = r2.date
-        WHERE r1.model = 'TopCTR' AND r2.model = 'TopProduct'
-        GROUP BY adv
+        SELECT r1.advertiser_id, COUNT(*) AS overlapping_products
+        FROM top_ctr_model r1
+        INNER JOIN top_products_model r2
+        ON r1.advertiser_id = r2.advertiser_id
+        AND r1.product_id = r2.product_id
+        AND r1.date = r2.date
+        WHERE r1.date = CURRENT_DATE
+        GROUP BY r1.advertiser_id
+        ORDER BY overlapping_products DESC
     """
     stats_data["model_overlap"] = db_query(query_overlap)
 
     return stats_data
 
-# TODO --> NO USAR. Lo estoy pisando por uno nuevo
-# Endpoint: /stats/
-@app.get("/stats/")
-def get_stats() -> Dict:
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        stats = {}
-
-        # Cantidad de advertisers
-        cursor.execute("SELECT COUNT(DISTINCT adv) FROM recommendations")
-        stats["advertisers_count"] = cursor.fetchone()[0]
-
-        # Ejemplo: estadísticas adicionales
-        cursor.execute("SELECT adv, COUNT(*) FROM recommendations GROUP BY adv")
-        stats["recommendations_per_advertiser"] = cursor.fetchall()
-
-        return stats
-    except Exception as e:
-        return {"error": str(e)}
-    finally:
-        cursor.close()
-        conn.close()
-
 # Endpoint: /history/<ADV>/
 # TODO Este no lo hice, me falta
 @app.get("/history/{adv}")
-def get_history(adv: str) -> Dict:
+def get_history(
+    adv: str = Path(..., title="Advertiser ID", description="ID del advertiser")
+):
+    """
+    Endpoint para obtener las recomendaciones de los últimos 7 días para un advertiser específico.
+    """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Query para obtener recomendaciones de los últimos 7 días
         query = """
-        SELECT model, product_id, date 
-        FROM recommendations 
-        WHERE adv = %s 
-        ORDER BY date DESC 
-        LIMIT 7
+            SELECT date, 'TopCTR' AS model, product_id
+            FROM top_ctr_model
+            WHERE advertiser_id = %s AND date >= CURRENT_DATE - INTERVAL '7 days'
+            UNION ALL
+            SELECT date, 'TopProduct' AS model, product_id
+            FROM top_products_model
+            WHERE advertiser_id = %s AND date >= CURRENT_DATE - INTERVAL '7 days'
+            ORDER BY date DESC
         """
-        cursor.execute(query, (adv,))
-        rows = cursor.fetchall()
-        history = [{"model": row[0], "product_id": row[1], "date": row[2]} for row in rows]
+        results = db_query(query, (adv, adv))
+
+        # Si no hay resultados, que tire una excepción
+        if not results:
+            raise HTTPException(status_code=404, detail="No se encontraron recomendaciones para este advertiser en los últimos 7 días.")
+
+        # Agrupar resultados por fecha y modelo
+        history = {}
+        for row in results:
+            date, model, product_id = row
+            if date not in history:
+                history[date] = {}
+            if model not in history[date]:
+                history[date][model] = []
+            history[date][model].append(product_id)
+
         return {"advertiser": adv, "history": history}
+
     except Exception as e:
-        return {"error": str(e)}
-    finally:
-        cursor.close()
-        conn.close()
+        raise HTTPException(status_code=500, detail=f"Error al obtener el historial: {e}")
