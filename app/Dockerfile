@@ -1,11 +1,11 @@
 # Imagen base
-FROM python:3.10-slim-bullseye
+FROM python:3.9.21-slim-bullseye
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
 # Copiar dependencias
-COPY requirements.txt requirements.txt
+COPY requirements.txt .
 
 # Instalar dependencias
 RUN pip install --no-cache-dir -r requirements.txt
