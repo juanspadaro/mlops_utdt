@@ -29,9 +29,6 @@ def db_query(query, params=None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en la base de datos: {e}")
 
-# def get_db_connection():
-#     return psycopg2.connect(**DB_CONFIG)
-
 # Endpoint: /recommendations/<ADV>/<Modelo>
 @app.get("/recommendations/{adv}/{model}")
 def recommendations(
@@ -115,9 +112,9 @@ def stats():
     return stats_data
 
 # Endpoint: /history/<ADV>/
-# TODO Este no lo hice, me falta
+
 @app.get("/history/{adv}")
-def get_history(
+def history(
     adv: str = Path(..., title="Advertiser ID", description="ID del advertiser")
 ):
     """
