@@ -150,7 +150,7 @@ El pipeline de datos incluye las siguientes tareas:
 </table>
 
 
- ## API y Endpoints
+## API y Endpoints
  
 1. `/recommendations/<ADV>/<Modelo>`
    - Devuelve recomendaciones del día para un advertiser y un modelo (TopCTR o TopProduct)
@@ -165,9 +165,39 @@ El pipeline de datos incluye las siguientes tareas:
 ![image](https://github.com/user-attachments/assets/37f98e96-ed58-408a-a365-167df743a3e0)
 
 
- ## Despliegue en Producción
+## Despliegue en Producción
 
- TBD
+El despliegue en producción se realizó utilizando **Docker** y **AWS App Runner**. A continuación, los pasos principales:
+
+1. **Construcción y Subida de la Imagen Docker**:
+   - La imagen fue construida con el siguiente comando:
+     ```bash
+     docker build -t recommendation-app .
+     ```
+   - Luego se etiquetó y subió a un repositorio en **Amazon ECR**:
+     ```bash
+     docker tag recommendation-app:latest <account_id>.dkr.ecr.<region>.amazonaws.com/recommendation-app:latest
+     docker push <account_id>.dkr.ecr.<region>.amazonaws.com/recommendation-app:latest
+     ```
+
+2. **Configuración en App Runner**:
+   - Se configuró un servicio en **AWS App Runner**:
+     - Puerto expuesto: `8081`.
+     - Protocolo de Health Check: `TCP`.
+   - App Runner desplegó la imagen y proporcionó un dominio público para acceder a los endpoints.
+
+3. **Validación del Despliegue**:
+   - Se validaron los endpoints accediendo a la documentación en:
+     ```plaintext
+     https://cq94hp9cvf.us-east-1.awsapprunner.com/docs
+     ```
+   - Los endpoints `/recommendations`, `/stats` y `/history` fueron probados exitosamente.
+
+4. **Monitoreo**:
+   - Los logs y métricas están disponibles dentro de **AWS App Runner** para monitorear el desempeño del servicio.
+
+Este despliegue garantiza un entorno confiable y escalable para la aplicación, utilizando las mejores prácticas de MLOps.
+
 
  ## Referencias y Recursos
 
