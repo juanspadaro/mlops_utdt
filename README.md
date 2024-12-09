@@ -71,16 +71,18 @@ El objetivo de este trabajo práctico es aplicar los conceptos y herramientas vi
 ## Estructura del Proyecto
 
 ```plaintext
-├── src/                   # Código fuente del proyecto
-│   ├── data_pipeline/     # Pipelines de procesamiento de datos
-│   ├── model/             # Definición y entrenamiento del modelo
-│   ├── deployment/        # Scripts para el despliegue en producción
-│   └── utils/             # Funciones auxiliares y herramientas
-├── notebooks/             # Notebooks para el análisis y experimentación
-├── config/                # Archivos de configuración
-├── docker/                # Archivos y configuración de Docker
-├── airflow/               # Workflows de Apache Airflow
-└── README.md              # Documentación del proyecto
+├── .github/workflows/     # Archivos para configurar GitHub Actions
+├── .ssh/                  # Claves RSA para acceso seguro
+├── AdTech/                # Generación y manejo de datos de publicidad
+├── Enunciado/             # Documentos con los lineamientos del proyecto final
+├── Programa/              # Silabo del curso de MLOps
+├── app/                   # Código fuente principal de la aplicación
+│   ├── main.py            # Punto de entrada de la aplicación
+├── dags/                  # Pipelines de Apache Airflow
+├── .gitignore             # Archivos y carpetas a ignorar por Git
+├── README.md              # Documentación del proyecto
+├── rds.py                 # Conexión y configuración de la base de datos RDS
+└── s3.py                  # Scripts para interacción con S3
 ```
 
 ## Instalación y Configuración
