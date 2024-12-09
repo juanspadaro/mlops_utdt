@@ -6,7 +6,7 @@
 **Horario:** Miércoles, 19:15 - 22:15
 
 
-**Alumnos:** Juan Spadaro, Tomás Gonzalez Danna, Rocío Palacín y Jaime Sempértegui 
+**Alumnos:** Juan Spadaro, Tomás Gonzalez Danna y Rocío Palacín
 
 
 ---
