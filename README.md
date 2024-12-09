@@ -138,6 +138,16 @@ El pipeline de datos incluye las siguientes tareas:
   
 ![image](https://github.com/user-attachments/assets/128ca21c-68a0-4670-9ad5-c670ce300130)
 
+<table>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/79db68b1-c997-4c8b-abca-9890a0e01e3c" width="400"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/3d0d8b53-7019-4328-8a3d-0624b4a9dc66" width="400"/>
+    </td>
+  </tr>
+</table>
 
 
  ## API y Endpoints
