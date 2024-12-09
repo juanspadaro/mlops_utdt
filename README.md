@@ -133,6 +133,9 @@ El pipeline de datos incluye las siguientes tareas:
 
 3. **Escritura en Base de Datos**
    - Guarda resultados en tablas PostgreSQL (`top_ctr_model`, `top_products_model`)
+  
+
+
 
  ## API y Endpoints
  
@@ -142,9 +145,12 @@ El pipeline de datos incluye las siguientes tareas:
    - Devuelve estadísticas globales:
       - Cantidad de advertisers activos.
       - Los 5 Advertisers de mayor variación diaria de recomendaciones.
-      - Coincidencia entre `TopCTR` y `TopProduct`. 
+      - Coincidencia de productos recomendados entre `TopCTR` y `TopProduct` de un mismo Advertiser.
 3. `/history/<ADV>/`
    - Devuelve historial de recomendaciones para un advertiser en los últimos 7 días.
+  
+![image](https://github.com/user-attachments/assets/37f98e96-ed58-408a-a365-167df743a3e0)
+
 
  ## Despliegue en Producción
 
