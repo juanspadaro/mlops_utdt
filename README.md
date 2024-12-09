@@ -136,6 +136,7 @@ El pipeline de datos incluye las siguientes tareas:
 3. **Escritura en Base de Datos**
    - Guarda resultados en tablas PostgreSQL (`top_ctr_model`, `top_products_model`)
   
+![image](https://github.com/user-attachments/assets/128ca21c-68a0-4670-9ad5-c670ce300130)
 
 
 
