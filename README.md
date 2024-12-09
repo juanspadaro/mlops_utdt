@@ -18,12 +18,11 @@
 - [Requisitos](#requisitos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Instalación y Configuración](#instalación-y-configuración)
-- [Ejecución del Proyecto](#ejecución-del-proyecto)
+- [Pipelines de Procesamiento de Datos](#pipelines-de-procesamiento-de-datos)
+- [API y Endpoints](#api-y-endpoints)
 - [Despliegue en Producción](#despliegue-en-producción)
-- [Evaluación](#evaluación)
 - [Referencias y Recursos](#referencias-y-recursos)
-- [Contribuciones](#contribuciones)
-- [Licencia](#licencia)
+
 
 ---
 
@@ -66,6 +65,8 @@ El objetivo de este trabajo práctico es aplicar los conceptos y herramientas vi
 - **Apache Airflow** para la orquestación de workflows
 - **AWS CLI** para la interacción con servicios en la nube de AWS
 - **Git** para el control de versiones
+- **PostgreSQL** como base de datos
+
 
 ## Estructura del Proyecto
 
@@ -120,6 +121,37 @@ Para configurar el entorno virtual llamado `mlops_utdt`, sigue estos pasos:
 
 Este ambiente virtual permitirá gestionar las dependencias de Python necesarias para el proyecto de manera aislada.
 
+ ## Pipelines de Procesamiento de Datos
+
+El pipeline de datos incluye las siguientes tareas:
+
+1. **Filtrado de Datos**
+   - Filtra logs crudos para mantener solo clientes activos.
+
+2. **Cálculo de Métricas**
+   - Calcula TopCTR y TopProduct basados en eventos.
+
+3. **Escritura en Base de Datos**
+   - Guarda resultados en tablas PostgreSQL (`top_ctr_model`, `top_products_model`)
+
+ ## API y Endpoints
  
+1. `/recommendations/<ADV>/<Modelo>`
+   - Devuelve recomendaciones del día para un advertiser y un modelo (TopCTR o TopProduct)
+2. `stats`
+   - Devuelve estadísticas globales:
+      - Cantidad de advertisers activos.
+      - Los 5 Advertisers de mayor variación diaria de recomendaciones.
+      - Coincidencia entre `TopCTR` y `TopProduct`. 
+3. `/history/<ADV>/`
+   - Devuelve historial de recomendaciones para un advertiser en los últimos 7 días.
 
+ ## Despliegue en Producción
 
+ TBD
+
+ ## Referencias y Recursos
+
+ - [FastAPI Documentation](https://fastapi.tiangolo.com/)
+ - [Apache Airflow Documentation](https://airflow.apache.org/docs/)
+ - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
