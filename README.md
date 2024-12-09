@@ -6,7 +6,7 @@
 **Horario:** Miércoles, 19:15 - 22:15
 
 
-**Alumnos:** Juan Spadaro, Tomás Gonzalez Danna, Rocío Palacín y Jaime Sempértegui 
+**Alumnos:** Juan Spadaro, Tomás Gonzalez Danna y Rocío Palacín
 
 
 ---
@@ -18,12 +18,11 @@
 - [Requisitos](#requisitos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Instalación y Configuración](#instalación-y-configuración)
-- [Ejecución del Proyecto](#ejecución-del-proyecto)
+- [Pipelines de Procesamiento de Datos](#pipelines-de-procesamiento-de-datos)
+- [API y Endpoints](#api-y-endpoints)
 - [Despliegue en Producción](#despliegue-en-producción)
-- [Evaluación](#evaluación)
 - [Referencias y Recursos](#referencias-y-recursos)
-- [Contribuciones](#contribuciones)
-- [Licencia](#licencia)
+
 
 ---
 
@@ -66,20 +65,24 @@ El objetivo de este trabajo práctico es aplicar los conceptos y herramientas vi
 - **Apache Airflow** para la orquestación de workflows
 - **AWS CLI** para la interacción con servicios en la nube de AWS
 - **Git** para el control de versiones
+- **PostgreSQL** como base de datos
+
 
 ## Estructura del Proyecto
 
 ```plaintext
-├── src/                   # Código fuente del proyecto
-│   ├── data_pipeline/     # Pipelines de procesamiento de datos
-│   ├── model/             # Definición y entrenamiento del modelo
-│   ├── deployment/        # Scripts para el despliegue en producción
-│   └── utils/             # Funciones auxiliares y herramientas
-├── notebooks/             # Notebooks para el análisis y experimentación
-├── config/                # Archivos de configuración
-├── docker/                # Archivos y configuración de Docker
-├── airflow/               # Workflows de Apache Airflow
-└── README.md              # Documentación del proyecto
+├── .github/workflows/     # Archivos para configurar GitHub Actions
+├── .ssh/                  # Claves RSA para acceso seguro
+├── AdTech/                # Generación y manejo de datos de publicidad
+├── Enunciado/             # Documentos con los lineamientos del proyecto final
+├── Programa/              # Silabo del curso de MLOps
+├── app/                   # Código fuente principal de la aplicación
+│   ├── main.py            # Punto de entrada de la aplicación
+├── dags/                  # Pipelines de Apache Airflow
+├── .gitignore             # Archivos y carpetas a ignorar por Git
+├── README.md              # Documentación del proyecto
+├── rds.py                 # Conexión y configuración de la base de datos RDS
+└── s3.py                  # Scripts para interacción con S3
 ```
 
 ## Instalación y Configuración
@@ -120,6 +123,84 @@ Para configurar el entorno virtual llamado `mlops_utdt`, sigue estos pasos:
 
 Este ambiente virtual permitirá gestionar las dependencias de Python necesarias para el proyecto de manera aislada.
 
+ ## Pipelines de Procesamiento de Datos
+
+El pipeline de datos incluye las siguientes tareas:
+
+1. **Filtrado de Datos**
+   - Filtra logs crudos para mantener solo clientes activos.
+
+2. **Cálculo de Métricas**
+   - Calcula TopCTR y TopProduct basados en eventos.
+
+3. **Escritura en Base de Datos**
+   - Guarda resultados en tablas PostgreSQL (`top_ctr_model`, `top_products_model`)
+  
+![image](https://github.com/user-attachments/assets/128ca21c-68a0-4670-9ad5-c670ce300130)
+
+<table>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/79db68b1-c997-4c8b-abca-9890a0e01e3c" width="400"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/3d0d8b53-7019-4328-8a3d-0624b4a9dc66" width="400"/>
+    </td>
+  </tr>
+</table>
+
+
+## API y Endpoints
  
+1. `/recommendations/<ADV>/<Modelo>`
+   - Devuelve recomendaciones del día para un advertiser y un modelo (TopCTR o TopProduct)
+2. `stats`
+   - Devuelve estadísticas globales:
+      - Cantidad de advertisers activos.
+      - Los 5 Advertisers de mayor variación diaria de recomendaciones.
+      - Coincidencia de productos recomendados entre `TopCTR` y `TopProduct` de un mismo Advertiser.
+3. `/history/<ADV>/`
+   - Devuelve historial de recomendaciones para un advertiser en los últimos 7 días.
+  
+![image](https://github.com/user-attachments/assets/37f98e96-ed58-408a-a365-167df743a3e0)
 
 
+## Despliegue en Producción
+
+El despliegue en producción se realizó utilizando **Docker** y **AWS App Runner**. A continuación, los pasos principales:
+
+1. **Construcción y Subida de la Imagen Docker**:
+   - La imagen fue construida con el siguiente comando:
+     ```bash
+     docker build -t recommendation-app .
+     ```
+   - Luego se etiquetó y subió a un repositorio en **Amazon ECR**:
+     ```bash
+     docker tag recommendation-app:latest <account_id>.dkr.ecr.<region>.amazonaws.com/recommendation-app:latest
+     docker push <account_id>.dkr.ecr.<region>.amazonaws.com/recommendation-app:latest
+     ```
+
+2. **Configuración en App Runner**:
+   - Se configuró un servicio en **AWS App Runner**:
+     - Puerto expuesto: `8081`.
+     - Protocolo de Health Check: `TCP`.
+   - App Runner desplegó la imagen y proporcionó un dominio público para acceder a los endpoints.
+
+3. **Validación del Despliegue**:
+   - Se validaron los endpoints accediendo a la documentación en:
+     ```plaintext
+     https://cq94hp9cvf.us-east-1.awsapprunner.com/docs
+     ```
+   - Los endpoints `/recommendations`, `/stats` y `/history` fueron probados exitosamente.
+
+4. **Monitoreo**:
+   - Los logs y métricas están disponibles dentro de **AWS App Runner** para monitorear el desempeño del servicio.
+
+Este despliegue garantiza un entorno confiable y escalable para la aplicación, utilizando las mejores prácticas de MLOps.
+
+
+ ## Referencias y Recursos
+
+ - [FastAPI Documentation](https://fastapi.tiangolo.com/)
+ - [Apache Airflow Documentation](https://airflow.apache.org/docs/)
+ - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
